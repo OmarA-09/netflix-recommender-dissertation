@@ -1,4 +1,4 @@
-from personalised_netflix_recommender import PersonalizedNetflixRecommender
+from src.personalised_netflix_recommender import PersonalisedNetflixRecommender
 
 def main():
     print("====================================================")
@@ -7,10 +7,10 @@ def main():
     print("\nInitializing recommender system...\n")
     
     # Initialize the recommender
-    recommender = PersonalizedNetflixRecommender()
+    recommender = PersonalisedNetflixRecommender()
     
     # Load the Netflix data
-    recommender.load_data('netflix_titles.csv')
+    recommender.load_data('data/netflix_titles.csv')
     
     # Preprocess the data
     recommender.preprocess()

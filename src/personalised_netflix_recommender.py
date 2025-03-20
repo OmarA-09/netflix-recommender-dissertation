@@ -5,7 +5,7 @@ from sklearn.metrics.pairwise import cosine_similarity
 import pickle
 import os
 
-class PersonalizedNetflixRecommender:
+class PersonalisedNetflixRecommender:
     def __init__(self):
         """Initialize the personalized Netflix recommender system"""
         self.df = None
@@ -264,10 +264,10 @@ class PersonalizedNetflixRecommender:
 # Example usage
 if __name__ == "__main__":
     # Initialize the recommender
-    recommender = PersonalizedNetflixRecommender()
+    recommender = PersonalisedNetflixRecommender()
     
     # Load data
-    recommender.load_data('netflix_titles.csv')
+    recommender.load_data('data/netflix_titles.csv')
     
     # Preprocess the data
     recommender.preprocess()
