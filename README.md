@@ -1,16 +1,18 @@
 # netflix-recommender-dissertation
 
+From netflix-recommender-dissertation:
+
 ## Install required packages:
 
 `pip install -r requirements.txt`
 
-## Run the run_recommender script:
+## For Terminal View: Run the run_recommender script:
 
-`python run_recommender.py`
+`python ./scripts/run_recommender.py`
 
-## Run the Backend
+## To run Backend with endpoints:
 
-`python app.py`
+`python ./src/app.py`
 
 ## Test with API curl commands in another terminal!
 

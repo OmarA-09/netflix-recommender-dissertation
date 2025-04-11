@@ -66,6 +66,7 @@ def get_profile():
         'disliked_count': len(disliked_titles)
     })
 
+# without cors
 # @app.route('/like', methods=['POST'])
 # def like_title():
 #     """Like a specific title"""
