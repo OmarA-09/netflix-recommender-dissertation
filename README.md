@@ -10,9 +10,13 @@ From netflix-recommender-dissertation:
 
 `python ./scripts/run_recommender.py`
 
+- Note: Ensure you select the correct recommender type before executing app.py
+
 ## To run Backend with endpoints:
 
 `python ./src/app.py`
+
+- Note: Ensure you select the correct recommender type before executing app.py
 
 ## Test with API curl commands in another terminal!
 
@@ -31,7 +35,8 @@ curl -X POST http://127.0.0.1:5000/dislike -H "Content-Type: application/json" -
 # 5. Get Recommendations (Default)
 curl http://127.0.0.1:5000/recommendations
 
-# 6. Get Recommendations with Count
+
+# 6. Get Recommendations with Count 
 curl "http://127.0.0.1:5000/recommendations?count=5"
 
 # 7. Get Recommendations with Rating Filter

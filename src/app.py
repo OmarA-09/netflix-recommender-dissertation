@@ -1,5 +1,6 @@
 from flask import Flask, request, jsonify
 from src.personalised_netflix_recommender import PersonalisedNetflixRecommender
+from src.knn_netflix_recommender import KNNNetflixRecommender  
 from src.evaluator import RecommenderEvaluator
 from flask_cors import CORS
 
@@ -19,8 +20,9 @@ CORS(app,
 )
 
 
-# Initialize the recommender system
-recommender = PersonalisedNetflixRecommender()
+# Initialize the recommender system: Uncomment below to switch between the different recommender types.
+recommender = KNNNetflixRecommender()
+# recommender = PersonalisedNetflixRecommender()
 recommender.load_data('data/netflix_titles.csv')
 recommender.preprocess()
 
@@ -66,30 +68,11 @@ def get_profile():
         'disliked_count': len(disliked_titles)
     })
 
-# without cors
-# @app.route('/like', methods=['POST'])
-# def like_title():
-#     """Like a specific title"""
-#     data = request.get_json()
-#     title = data.get('title') if data else None
-    
-#     if not title:
-#         return jsonify({'error': 'Title parameter is required'}), 400
-    
-#     success = recommender.like_title(title)
-#     if success:
-#         return jsonify({
-#             'status': 'success',
-#             'message': f"Added '{title}' to liked titles"
-#         })
-#     else:
-#         return jsonify({'error': 'Title not found'}), 404
 
 @app.route('/like', methods=['POST', 'OPTIONS'])
 def like_title():
     # Handle OPTIONS preflight request
     if request.method == 'OPTIONS':
-        # Preflight request handling
         response = jsonify(success=True)
         response.headers.add('Access-Control-Allow-Origin', '*')
         response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
