@@ -10,7 +10,7 @@ From netflix-recommender-dissertation:
 
 `python ./scripts/run_recommender.py`
 
-- Note: Ensure you select the correct recommender type before executing app.py
+- Note: Ensure you select the correct recommender type for init before executing app.py
 
 ## To run Backend with endpoints:
 

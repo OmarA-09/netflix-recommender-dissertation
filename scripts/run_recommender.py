@@ -1,5 +1,10 @@
-from src.personalised_netflix_recommender import PersonalisedNetflixRecommender
-from src.knn_recommender import KNNNetflixRecommender  
+# from src.personalised_netflix_recommender import PersonalisedNetflixRecommender
+# from src.knn_recommender import KNNNetflixRecommender  
+
+from src.recommenders.CosineNetflixRecommender import CosineNetflixRecommender
+from src.recommenders.KNNNetflixRecommender import KNNNetflixRecommender
+
+
 
 def main():
     print("====================================================")
@@ -10,7 +15,7 @@ def main():
     # Initialize the recommender: Choose from 2 options below by uncommenting
 
     recommender = KNNNetflixRecommender()
-    # recommender = PersonalisedNetflixRecommender()
+    # recommender = CosineNetflixRecommender()
     
     # Load the Netflix data
     recommender.load_data('data/netflix_titles.csv')

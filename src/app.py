@@ -1,16 +1,13 @@
 from flask import Flask, request, jsonify
-from src.personalised_netflix_recommender import PersonalisedNetflixRecommender
-from src.knn_netflix_recommender import KNNNetflixRecommender  
+from src.recommenders.CosineNetflixRecommender import CosineNetflixRecommender
+from src.recommenders.KNNNetflixRecommender import KNNNetflixRecommender
 from src.evaluator import RecommenderEvaluator
 from flask_cors import CORS
-
 import os
-
-# Import your profile creation function
 from seed_user import create_profile
 
 app = Flask(__name__)
-# Comprehensive CORS configuration
+
 CORS(app, 
      resources={r"/*": {"origins": "*"}},
      allow_headers=["Content-Type", "Authorization"],
@@ -19,21 +16,23 @@ CORS(app,
      max_age=3600
 )
 
+###############################################
+# IMPORTANT: This is a critical configuration #
+# Init the recommender system: Uncomment below to switch between the different recommender types.
+###############################################
 
-# Initialize the recommender system: Uncomment below to switch between the different recommender types.
 recommender = KNNNetflixRecommender()
-# recommender = PersonalisedNetflixRecommender()
+# recommender = CosineNetflixRecommender()
 recommender.load_data('data/netflix_titles.csv')
 recommender.preprocess()
 
 # Check if user profile exists, if not create it
-profile_path = "user_profile.pkl"
-if not os.path.exists(profile_path) or os.path.getsize(profile_path) == 0:
-    print("No existing profile found. Creating seed profile...")
+if not os.path.exists(recommender.profile_path) or os.path.getsize(recommender.profile_path) == 0:
+    print(f"No existing profile found at {recommender.profile_path}. Creating seed profile...")
     # Create the profile using the imported function
     create_profile(recommender)
 else:
-    print("Existing profile found. Using saved preferences.")
+    print(f"Existing profile found at {recommender.profile_path}. Using saved preferences.")
 
 
 # Initialize evaluator

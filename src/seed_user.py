@@ -1,17 +1,11 @@
-from src.personalised_netflix_recommender import PersonalisedNetflixRecommender
+from src.recommenders.CosineNetflixRecommender import CosineNetflixRecommender
 
-
-def create_profile(recommender=None):
-    # If no recommender provided, create one
-    if recommender is None:
-        recommender = PersonalisedNetflixRecommender()
-        recommender.load_data('data/netflix_titles.csv')
-        recommender.preprocess()
-    
+def create_profile(recommender):
+    """Add seed likes to an existing recommender"""
     # Reset preferences
     recommender.reset_preferences()
     
-    # Hard-coded titles
+    # Hard-coded titles for teens
     teens_titles = [
         "Stranger Things",
         "The Flash",
@@ -27,5 +21,9 @@ def create_profile(recommender=None):
     return recommender
 
 if __name__ == "__main__":
-    # This allows the script to be run standalone
-    create_profile()
+    # This allows the script to be run standalone for testing
+    test_recommender = CosineNetflixRecommender()
+    test_recommender.load_data('data/netflix_titles.csv')
+    test_recommender.preprocess()
+    create_profile(test_recommender)
+    print("Seed profile created successfully!")

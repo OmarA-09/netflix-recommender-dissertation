@@ -1,17 +1,19 @@
 import pandas as pd
 import numpy as np
 from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.metrics.pairwise import cosine_similarity
+from sklearn.neighbors import NearestNeighbors
 from src.integration_service import NetflixRecommenderIntegration
 import logging
 
-class PersonalisedNetflixRecommender:
-    def __init__(self, profile_path="user_profile.pkl"):
-        """Initialize the personalized Netflix recommender system"""
+class KNNNetflixRecommender:
+    def __init__(self, profile_path="user_profile_knn.pkl", n_neighbours=10):
+        """Initialise the KNN-based Netflix recommender system"""
         self.integration_service = NetflixRecommenderIntegration(profile_path)
         
         self.df = None
         self.tfidf_matrix = None
+        self.knn_model = None
+        self.n_neighbours = n_neighbours
         self.user_liked_titles = set()
         self.user_disliked_titles = set()
         self.user_profile = None
@@ -37,12 +39,21 @@ class PersonalisedNetflixRecommender:
         return self
     
     def preprocess(self):
-        """Create the TF-IDF matrix for content similarity"""
-        self.logger.info("Building content similarity matrix...")
+        """Create the TF-IDF matrix and fit KNN model"""
+        self.logger.info("Building TF-IDF matrix...")
         tfidf = TfidfVectorizer(stop_words='english')
         self.tfidf_matrix = tfidf.fit_transform(self.df['combined_features'])
         
         self.logger.info(f"Created TF-IDF matrix with shape: {self.tfidf_matrix.shape}")
+        
+        # Fit KNN model on the TF-IDF matrix
+        self.logger.info(f"Fitting KNN model with {self.n_neighbours} neighbours...")
+        self.knn_model = NearestNeighbors(
+            n_neighbors=min(self.n_neighbours + 1, self.tfidf_matrix.shape[0]),
+            algorithm='auto',
+            metric='euclidean'
+        )
+        self.knn_model.fit(self.tfidf_matrix)
         
         # Initialize user profile if not already loaded
         if self.user_profile is None:
@@ -94,7 +105,7 @@ class PersonalisedNetflixRecommender:
             self.user_profile
         )
         
-        self.logger.info("User profile updated based on preferences")
+        # self.logger.info("User profile updated based on preferences")
     
     def like_title(self, title):
         """User likes a title"""
@@ -131,21 +142,28 @@ class PersonalisedNetflixRecommender:
         # Update user profile
         self.update_user_profile()
         return True
+        
     def get_recommendations(self, top_n=10, rating_filter=None):
-        """Get personalized recommendations based on user profile"""
+        """Get personalised recommendations based on user profile and KNN"""
         if self.user_profile is None or len(self.user_liked_titles) == 0:
             self.logger.warning("Not enough preference data")
             return pd.DataFrame()
         
-        # Calculate similarity between user profile and all items
+        # Use the user profile as a query point
         user_profile_matrix = self.user_profile.reshape(1, -1)
-        cosine_similarities = cosine_similarity(user_profile_matrix, self.tfidf_matrix)[0]
+        
+        # Find nearest neighbours to the user profile
+        distances, indices = self.knn_model.kneighbors(user_profile_matrix, n_neighbors=min(50, self.tfidf_matrix.shape[0]))
         
         # Create a list of (index, score) tuples
-        scored_items = list(enumerate(cosine_similarities))
+        # Convert distance to similarity score (1 - normalized distance)
+        max_distance = distances.max()
+        if max_distance > 0:
+            similarities = 1 - (distances[0] / max_distance)
+        else:
+            similarities = np.ones_like(distances[0])
         
-        # Sort by similarity score (highest first)
-        scored_items.sort(key=lambda x: x[1], reverse=True)
+        scored_items = list(zip(indices[0], similarities))
         
         # Use integration service to filter recommendations
         all_interacted = self.user_liked_titles.union(self.user_disliked_titles)
@@ -169,6 +187,43 @@ class PersonalisedNetflixRecommender:
         recommendations['rank'] = range(1, len(recommendations) + 1)
         
         return recommendations
+    
+    def search_titles(self, query, top_n=5):
+        """Search for titles in the dataset"""
+        # Simple case-insensitive search in title
+        matches = self.df[self.df['title'].str.lower().str.contains(query.lower())]
+        
+        if matches.empty:
+            print(f"No titles found matching: {query}")
+            return pd.DataFrame()
+        
+        return matches.head(top_n)[['title', 'type', 'rating', 'release_year']]
+        
+    # def get_similar_titles(self, title, n=10):
+    #     """Get titles similar to a given title using KNN"""
+    #     matches = self.df[self.df['title'] == title]
+    #     if matches.empty:
+    #         self.logger.warning(f"Title not found: {title}")
+    #         return pd.DataFrame()
+        
+    #     title_idx = matches.index[0]
+    #     title_features = self.tfidf_matrix[title_idx].reshape(1, -1)
+        
+    #     # Find nearest neighbours to the title
+    #     distances, indices = self.knn_model.kneighbors(title_features, n_neighbors=n+1)
+        
+    #     # The first result will be the title itself, so we skip it
+    #     similar_indices = indices[0][1:]
+    #     similarity_scores = 1 - (distances[0][1:] / distances[0][1:].max())
+        
+    #     similar_titles = self.df.iloc[similar_indices][
+    #         ['title', 'type', 'rating', 'release_year', 'description']
+    #     ].copy()
+        
+    #     similar_titles['similarity_score'] = similarity_scores
+    #     similar_titles['rank'] = range(1, len(similar_titles) + 1)
+        
+    #     return similar_titles
     
     def get_user_preferences(self):
         """Get information about user's current preferences"""

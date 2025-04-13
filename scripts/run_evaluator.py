@@ -1,9 +1,9 @@
 # evaluation_script.py
-from src.personalised_netflix_recommender import PersonalisedNetflixRecommender
+from src.personalised_netflix_recommender import CosineNetflixRecommender
 from src.evaluator import RecommenderEvaluator
 
 # Step 1: Initialize your recommender
-recommender = PersonalisedNetflixRecommender()
+recommender = CosineNetflixRecommender()
 recommender.load_data('data/netflix_titles.csv')
 recommender.preprocess()
 
@@ -27,7 +27,7 @@ print(f"Teens titles: {teens_titles}")
 print(f"Adults titles: {adults_titles}")
 
 # Step 4: Compare different methods or configurations
-weighted_recommender = PersonalisedNetflixRecommender()
+weighted_recommender = CosineNetflixRecommender()
 weighted_recommender.content_weight = 0.5
 weighted_recommender.rating_weight = 0.5
 

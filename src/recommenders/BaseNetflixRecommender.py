@@ -1,19 +1,18 @@
 import pandas as pd
 import numpy as np
 from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.neighbors import NearestNeighbors
 from src.integration_service import NetflixRecommenderIntegration
 import logging
 
-class KNNNetflixRecommender:
-    def __init__(self, profile_path="user_profile_knn.pkl", n_neighbours=10):
-        """Initialise the KNN-based Netflix recommender system"""
+class BaseNetflixRecommender:
+    """Base class for Netflix recommender systems"""
+    
+    def __init__(self, profile_path="user_profile.pkl"):
+        """Initialize the Netflix recommender system"""
         self.integration_service = NetflixRecommenderIntegration(profile_path)
         
         self.df = None
         self.tfidf_matrix = None
-        self.knn_model = None
-        self.n_neighbours = n_neighbours
         self.user_liked_titles = set()
         self.user_disliked_titles = set()
         self.user_profile = None
@@ -39,27 +38,25 @@ class KNNNetflixRecommender:
         return self
     
     def preprocess(self):
-        """Create the TF-IDF matrix and fit KNN model"""
+        """Create the TF-IDF matrix for content similarity"""
         self.logger.info("Building TF-IDF matrix...")
         tfidf = TfidfVectorizer(stop_words='english')
         self.tfidf_matrix = tfidf.fit_transform(self.df['combined_features'])
         
         self.logger.info(f"Created TF-IDF matrix with shape: {self.tfidf_matrix.shape}")
         
-        # Fit KNN model on the TF-IDF matrix
-        self.logger.info(f"Fitting KNN model with {self.n_neighbours} neighbours...")
-        self.knn_model = NearestNeighbors(
-            n_neighbors=min(self.n_neighbours + 1, self.tfidf_matrix.shape[0]),
-            algorithm='auto',
-            metric='euclidean'
-        )
-        self.knn_model.fit(self.tfidf_matrix)
-        
         # Initialize user profile if not already loaded
         if self.user_profile is None:
             self.user_profile = np.zeros(self.tfidf_matrix.shape[1])
             
+        # Call model-specific preprocessing
+        self._additional_preprocessing()
+            
         return self
+    
+    def _additional_preprocessing(self):
+        """Placeholder for model-specific preprocessing steps"""
+        pass
     
     def update_user_profile(self):
         """Update user profile based on liked and disliked titles"""
@@ -104,8 +101,6 @@ class KNNNetflixRecommender:
             self.user_disliked_titles, 
             self.user_profile
         )
-        
-        self.logger.info("User profile updated based on preferences")
     
     def like_title(self, title):
         """User likes a title"""
@@ -142,28 +137,26 @@ class KNNNetflixRecommender:
         # Update user profile
         self.update_user_profile()
         return True
+    
+    def search_titles(self, query, top_n=5):
+        """Search for titles in the dataset"""
+        # Simple case-insensitive search in title
+        matches = self.df[self.df['title'].str.lower().str.contains(query.lower())]
         
+        if matches.empty:
+            print(f"No titles found matching: {query}")
+            return pd.DataFrame()
+        
+        return matches.head(top_n)[['title', 'type', 'rating', 'release_year']]
+    
     def get_recommendations(self, top_n=10, rating_filter=None):
-        """Get personalised recommendations based on user profile and KNN"""
+        """Get recommendations based on user profile"""
         if self.user_profile is None or len(self.user_liked_titles) == 0:
             self.logger.warning("Not enough preference data")
             return pd.DataFrame()
         
-        # Use the user profile as a query point
-        user_profile_matrix = self.user_profile.reshape(1, -1)
-        
-        # Find nearest neighbours to the user profile
-        distances, indices = self.knn_model.kneighbors(user_profile_matrix, n_neighbors=min(50, self.tfidf_matrix.shape[0]))
-        
-        # Create a list of (index, score) tuples
-        # Convert distance to similarity score (1 - normalized distance)
-        max_distance = distances.max()
-        if max_distance > 0:
-            similarities = 1 - (distances[0] / max_distance)
-        else:
-            similarities = np.ones_like(distances[0])
-        
-        scored_items = list(zip(indices[0], similarities))
+        # This method must be implemented by derived classes
+        scored_items = self._get_scored_items()
         
         # Use integration service to filter recommendations
         all_interacted = self.user_liked_titles.union(self.user_disliked_titles)
@@ -188,38 +181,30 @@ class KNNNetflixRecommender:
         
         return recommendations
     
-    def get_similar_titles(self, title, n=10):
-        """Get titles similar to a given title using KNN"""
-        matches = self.df[self.df['title'] == title]
-        if matches.empty:
-            self.logger.warning(f"Title not found: {title}")
-            return pd.DataFrame()
-        
-        title_idx = matches.index[0]
-        title_features = self.tfidf_matrix[title_idx].reshape(1, -1)
-        
-        # Find nearest neighbours to the title
-        distances, indices = self.knn_model.kneighbors(title_features, n_neighbors=n+1)
-        
-        # The first result will be the title itself, so we skip it
-        similar_indices = indices[0][1:]
-        similarity_scores = 1 - (distances[0][1:] / distances[0][1:].max())
-        
-        similar_titles = self.df.iloc[similar_indices][
-            ['title', 'type', 'rating', 'release_year', 'description']
-        ].copy()
-        
-        similar_titles['similarity_score'] = similarity_scores
-        similar_titles['rank'] = range(1, len(similar_titles) + 1)
-        
-        return similar_titles
+    def _get_scored_items(self):
+        """Calculate similarity scores between user profile and items"""
+        # This method must be implemented by derived classes
+        raise NotImplementedError("Subclasses must implement _get_scored_items()")
     
+
     def get_user_preferences(self):
         """Get information about user's current preferences"""
         liked_df = self.df[self.df['title'].isin(self.user_liked_titles)]
         disliked_df = self.df[self.df['title'].isin(self.user_disliked_titles)]
         
         self.logger.info(f"You have liked {len(liked_df)} titles and disliked {len(disliked_df)} titles.")
+        
+        # Display liked titles
+        if not liked_df.empty:
+            self.logger.info("\n--- Titles You've Liked ---")
+            for i, (_, row) in enumerate(liked_df.iterrows(), 1):
+                self.logger.info(f"{i}. {row['title']} ({row['type']}, {row['rating']})")
+        
+        # Display disliked titles
+        if not disliked_df.empty:
+            self.logger.info("\n--- Titles You've Disliked ---")
+            for i, (_, row) in enumerate(disliked_df.iterrows(), 1):
+                self.logger.info(f"{i}. {row['title']} ({row['type']}, {row['rating']})")
         
         # Use integration service for preference analysis
         preference_analysis = self.integration_service.analyze_user_preferences(liked_df)
@@ -230,7 +215,7 @@ class KNNNetflixRecommender:
                 self.logger.info(f"• {genre} ({count} titles)")
         
         return liked_df, disliked_df
-    
+        
     def reset_preferences(self):
         """Reset all user preferences"""
         self.user_liked_titles = set()

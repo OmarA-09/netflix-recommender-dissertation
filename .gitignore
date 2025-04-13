@@ -9,7 +9,7 @@ build/
 *.egg-info/
 
 # User profile data
-user_profile.pkl
+*.pkl
 
 # Virtual environments
 venv/
