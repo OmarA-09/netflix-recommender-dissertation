@@ -224,5 +224,52 @@ def get_evaluation():
         }
     })
 
+@app.route('/user/preferences', methods=['GET'])
+def get_user_preferences():
+    """
+    Endpoint to retrieve user's liked and disliked titles
+    Returns detailed information about user preferences
+    """
+    try:
+        # Use the existing method from the recommender
+        liked_df, disliked_df = recommender.get_user_preferences()
+        
+        # Convert DataFrames to list of dictionaries
+        liked_titles = liked_df[['title', 'type', 'rating', 'release_year']].to_dict(orient='records')
+        disliked_titles = disliked_df[['title', 'type', 'rating', 'release_year']].to_dict(orient='records')
+        
+        # Analyze preferences using the integration service
+        preference_analysis = recommender.integration_service.analyze_user_preferences(liked_df)
+        
+        return jsonify({
+            'liked_titles': liked_titles,
+            'disliked_titles': disliked_titles,
+            'liked_count': len(liked_titles),
+            'disliked_count': len(disliked_titles),
+            'genre_insights': preference_analysis.get('favorite_genres', {}) if preference_analysis else {}
+        }), 200
+    except Exception as e:
+        print(f"Error in user preferences endpoint: {str(e)}")
+        return jsonify({
+            'error': 'Failed to retrieve user preferences',
+            'details': str(e)
+        }), 500
+
+@app.route('/reset', methods=['POST'])
+def reset_preferences():
+    """
+    Endpoint to completely reset user preferences
+    """
+    try:
+        recommender.reset_preferences()
+        return jsonify({
+            'message': 'User preferences have been successfully reset'
+        }), 200
+    except Exception as e:
+        logger.error(f"Error resetting preferences: {str(e)}")
+        return jsonify({'error': 'Failed to reset preferences'}), 500
+
+
+
 if __name__ == '__main__':
     app.run(debug=True)

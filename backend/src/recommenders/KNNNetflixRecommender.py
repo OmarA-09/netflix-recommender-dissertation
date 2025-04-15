@@ -6,7 +6,7 @@ from src.integration_service import NetflixRecommenderIntegration
 class KNNNetflixRecommender(BaseNetflixRecommender):
     """Netflix recommender using K-Nearest Neighbors"""
     
-    def __init__(self, profile_path="user_profile_knn.pkl", n_neighbours=10):
+    def __init__(self, profile_path="data/user_profile_knn.pkl", n_neighbours=10):
         """Initialize the KNN-based Netflix recommender"""
         super().__init__(profile_path)
         self.n_neighbours = n_neighbours

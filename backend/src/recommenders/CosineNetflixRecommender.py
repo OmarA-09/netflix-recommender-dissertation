@@ -5,7 +5,7 @@ from src.integration_service import NetflixRecommenderIntegration
 class CosineNetflixRecommender(BaseNetflixRecommender):
     """Netflix recommender using cosine similarity"""
     
-    def __init__(self, profile_path="user_profile_cosine.pkl"):
+    def __init__(self, profile_path="data/user_profile_cosine.pkl"):
         """Initialize the cosine similarity-based Netflix recommender"""
         super().__init__(profile_path)
     

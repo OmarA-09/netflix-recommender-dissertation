@@ -6,7 +6,7 @@ From netflix-recommender-dissertation:
 
 `pip install -r requirements.txt`
 
-## For Terminal View: Run the run_recommender script:
+## For Terminal View: Run the run_recommender script from backend folder:
 
 `python ./scripts/run_recommender.py`
 
@@ -26,27 +26,33 @@ curl http://127.0.0.1:5000/
 
 curl http://127.0.0.1:5000/profile
 
-# 3. Like a Title
+### 3. Like a Title
 curl -X POST http://127.0.0.1:5000/like -H "Content-Type: application/json" -d '{"title": "Stranger Things"}'
 
-# 4. Dislike a Title
+### 4. Dislike a Title
 curl -X POST http://127.0.0.1:5000/dislike -H "Content-Type: application/json" -d '{"title": "The Crown"}'
 
-# 5. Get Recommendations (Default)
+### 5. Get Recommendations (Default)
 curl http://127.0.0.1:5000/recommendations
 
 
-# 6. Get Recommendations with Count 
+### 6. Get Recommendations with Count 
 curl "http://127.0.0.1:5000/recommendations?count=5"
 
-# 7. Get Recommendations with Rating Filter
+### 7. Get Recommendations with Rating Filter
 curl "http://127.0.0.1:5000/recommendations?rating_filter=PG"
 
-# 8. Search Titles
+### 8. Search Titles
 curl "http://127.0.0.1:5000/search?query=stranger"
 
-# 9. Search Titles with Rating Filter
+### 9. Search Titles with Rating Filter
 curl "http://127.0.0.1:5000/search?query=drama&rating=TV-14"
 
-# 10. Get Evaluation Metrics
+### 10. Get Evaluation Metrics
 curl http://127.0.0.1:5000/evaluation
+
+### 11. Get User Preferences
+curl http://127.0.0.1:5000/user/preferences
+
+### 12. Reset User Preferences
+curl -X POST http://127.0.0.1:5000/reset
