@@ -5,6 +5,8 @@ from src.evaluator import RecommenderEvaluator
 from flask_cors import CORS
 import os
 from seed_user import create_profile
+import math
+import numpy as np
 
 app = Flask(__name__)
 
@@ -269,7 +271,141 @@ def reset_preferences():
         logger.error(f"Error resetting preferences: {str(e)}")
         return jsonify({'error': 'Failed to reset preferences'}), 500
 
+# @app.route('/films', methods=['GET'])
+# def list_films():
+#     """
+#     Endpoint to list films with optional search and pagination
+    
+#     Query Parameters:
+#     - query: Optional search term to filter titles
+#     - page: Page number for pagination (default: 1)
+#     - limit: Number of results per page (default: 20, max: 100)
+#     - type: Optional filter for 'Movie' or 'TV Show'
+#     - rating: Optional filter for content rating
+#     """
+#     try:
+#         # Get query parameters
+#         query = request.args.get('query', '').strip()
+#         page = max(1, request.args.get('page', 1, type=int))
+#         limit = min(100, max(1, request.args.get('limit', 20, type=int)))
+#         content_type = request.args.get('type', '').strip()
+#         rating = request.args.get('rating', '').strip()
+        
+#         # Start with the full dataset
+#         filtered_df = recommender.df.copy()
+        
+#         # Apply search filter if query is provided
+#         if query:
+#             filtered_df = filtered_df[
+#                 filtered_df['title'].str.contains(query, case=False, na=False)
+#             ]
+        
+#         # Apply type filter if specified
+#         if content_type:
+#             filtered_df = filtered_df[filtered_df['type'].str.lower() == content_type.lower()]
+        
+#         # Apply rating filter if specified
+#         if rating:
+#             filtered_df = filtered_df[filtered_df['rating'] == rating]
+        
+#         # Sort by release year (descending)
+#         filtered_df = filtered_df.sort_values('release_year', ascending=False)
+        
+#         # Pagination
+#         total_count = len(filtered_df)
+#         total_pages = math.ceil(total_count / limit)
+        
+#         # Slice the dataframe for the current page
+#         start_idx = (page - 1) * limit
+#         end_idx = start_idx + limit
+#         page_df = filtered_df.iloc[start_idx:end_idx]
+        
+#         # Prepare response
+#         results = page_df[['title', 'type', 'rating', 'release_year']].to_dict(orient='records')
+        
+#         return jsonify({
+#             'status': 'success',
+#             'total_count': total_count,
+#             'page': page,
+#             'total_pages': total_pages,
+#             'limit': limit,
+#             'results': results
+#         }), 200
+    
+#     except Exception as e:
+#         print(f"Error in films list endpoint: {str(e)}")
+#         return jsonify({
+#             'error': 'Failed to retrieve film list',
+#             'details': str(e)
+#         }), 500
 
+@app.route('/films', methods=['GET'])
+def list_films():
+    """
+    Endpoint to list films with optional search and pagination
+    
+    Query Parameters:
+    - query: Optional search term to filter titles
+    - page: Page number for pagination (default: 1)
+    - limit: Number of results per page (default: 20, max: 100)
+    - type: Optional filter for 'Movie' or 'TV Show'
+    - rating: Optional filter for content rating
+    """
+    try:
+        # Get query parameters
+        query = request.args.get('query', '').strip()
+        page = max(1, request.args.get('page', 1, type=int))
+        limit = min(100, max(1, request.args.get('limit', 20, type=int)))
+        content_type = request.args.get('type', '').strip()
+        rating = request.args.get('rating', '').strip()
+        
+        # Start with the full dataset
+        filtered_df = recommender.df.copy()
+        
+        # Apply search filter if query is provided
+        if query:
+            filtered_df = filtered_df[
+                filtered_df['title'].str.contains(query, case=False, na=False)
+            ]
+        
+        # Apply type filter if specified
+        if content_type:
+            filtered_df = filtered_df[filtered_df['type'].str.lower() == content_type.lower()]
+        
+        # Apply rating filter if specified
+        if rating:
+            filtered_df = filtered_df[filtered_df['rating'] == rating]
+        
+        # Sort by release year (descending)
+        filtered_df = filtered_df.sort_values('release_year', ascending=False)
+        
+        # Pagination
+        total_count = len(filtered_df)
+        total_pages = math.ceil(total_count / limit)
+        
+        # Slice the dataframe for the current page
+        start_idx = (page - 1) * limit
+        end_idx = start_idx + limit
+        page_df = filtered_df.iloc[start_idx:end_idx]
+        
+        # Prepare response with title, type, rating, release_year, and description
+        results = page_df[['title', 'type', 'rating', 'release_year', 'description']].to_dict(orient='records')
+        
+        return jsonify({
+            'status': 'success',
+            'total_count': total_count,
+            'page': page,
+            'total_pages': total_pages,
+            'limit': limit,
+            'results': results
+        }), 200
+    
+    except Exception as e:
+        print(f"Error in films list endpoint: {str(e)}")
+        return jsonify({
+            'error': 'Failed to retrieve film list',
+            'details': str(e)
+        }), 500
 
 if __name__ == '__main__':
     app.run(debug=True)
