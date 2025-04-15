@@ -11,6 +11,7 @@ class KNNNetflixRecommender(BaseNetflixRecommender):
         super().__init__(profile_path)
         self.n_neighbours = n_neighbours
         self.knn_model = None
+        
     
     def _additional_preprocessing(self):
         """Fit KNN model on the TF-IDF matrix"""

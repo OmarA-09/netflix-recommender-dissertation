@@ -1,6 +1,9 @@
 import pandas as pd
 import numpy as np
 from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.decomposition import TruncatedSVD
+import pickle
+import os
 from src.integration_service import NetflixRecommenderIntegration
 import logging
 
@@ -17,46 +20,146 @@ class BaseNetflixRecommender:
         self.user_disliked_titles = set()
         self.user_profile = None
         self.profile_path = profile_path
+        self.models_path = profile_path.replace('.pkl', '_models.pkl')
+        self.tfidf_vectorizer = None  
+        self.svd_model = None         
         
         logging.basicConfig(level=logging.INFO)
         self.logger = logging.getLogger(__name__)
     
     def load_data(self, filepath):
         """Load the Netflix dataset"""
-        self.df = pd.read_csv(filepath)
-        self.df = self.integration_service.preprocess_dataset(self.df)
-        
-        self.logger.info(f"Loaded dataset with {self.df.shape[0]} titles")
-        
-        # Load existing user profile
-        profile_data = self.integration_service.load_user_profile()
-        if profile_data:
-            self.user_liked_titles = profile_data['liked_titles']
-            self.user_disliked_titles = profile_data['disliked_titles']
-            self.user_profile = profile_data['user_profile']
-        
-        return self
-    
+        try:
+            self.df = pd.read_csv(filepath)
+            self.df = self.integration_service.preprocess_dataset(self.df)
+            
+            # Ensure 'combined_features' exists
+            if 'combined_features' not in self.df.columns:
+                self.logger.error("Column 'combined_features' missing from preprocessed data")
+                raise ValueError("Required column 'combined_features' not found")
+                
+            self.logger.info(f"Loaded dataset with {self.df.shape[0]} titles")
+            
+            # Load existing user profile (removed the call to _load_models)
+            profile_data = self.integration_service.load_user_profile()
+            if profile_data:
+                self.user_liked_titles = profile_data['liked_titles']
+                self.user_disliked_titles = profile_data['disliked_titles']
+                self.user_profile = profile_data['user_profile']
+            
+            return self
+        except Exception as e:
+            self.logger.error(f"Error loading data: {str(e)}")
+            raise
+
     def preprocess(self):
-        """Create the TF-IDF matrix for content similarity"""
-        self.logger.info("Building TF-IDF matrix...")
-        tfidf = TfidfVectorizer(stop_words='english')
-        self.tfidf_matrix = tfidf.fit_transform(self.df['combined_features'])
-        
-        self.logger.info(f"Created TF-IDF matrix with shape: {self.tfidf_matrix.shape}")
-        
-        # Initialize user profile if not already loaded
-        if self.user_profile is None:
-            self.user_profile = np.zeros(self.tfidf_matrix.shape[1])
+        """Create the TF-IDF matrix with SVD dimensionality reduction"""
+        try:
+            self.logger.info("Building TF-IDF matrix with age rating emphasis...")
             
-        # Call model-specific preprocessing
-        self._additional_preprocessing()
+            # First, try to load existing models
+            models_data = self.integration_service.load_models()
+            if models_data:
+                self.svd_model = models_data.get('svd_model')
+                self.tfidf_vectorizer = models_data.get('tfidf_vectorizer')
+                self.n_components = models_data.get('n_components')
             
-        return self
+            # Create weighted features
+            self.df['weighted_features'] = self._create_weighted_features(self.df)
+            
+            # Apply TF-IDF and SVD
+            try:
+                if self.tfidf_vectorizer is None:
+                    # Build new models
+                    self.tfidf_vectorizer = TfidfVectorizer(stop_words='english')
+                    tfidf_matrix_raw = self.tfidf_vectorizer.fit_transform(self.df['weighted_features'])
+                    
+                    self.n_components = min(300, tfidf_matrix_raw.shape[1] - 1)
+                    self.svd_model = TruncatedSVD(n_components=self.n_components, random_state=42)
+                    self.tfidf_matrix = self.svd_model.fit_transform(tfidf_matrix_raw)
+                    
+                    # Save the new models
+                    self.integration_service.save_models(
+                        self.svd_model,
+                        self.tfidf_vectorizer,
+                        self.n_components
+                    )
+                else:
+                    # Use existing models
+                    tfidf_matrix_raw = self.tfidf_vectorizer.transform(self.df['weighted_features'])
+                    self.tfidf_matrix = self.svd_model.transform(tfidf_matrix_raw)
+            except Exception as e:
+                self.logger.error(f"Error in TF-IDF/SVD processing: {str(e)}")
+                # Fall back to simple TF-IDF without SVD if necessary
+                self.logger.warning("Falling back to simple TF-IDF without SVD")
+                self.tfidf_vectorizer = TfidfVectorizer(stop_words='english')
+                self.tfidf_matrix = self.tfidf_vectorizer.fit_transform(self.df['weighted_features']).toarray()
+                self.svd_model = None
+            
+            # Initialize user profile if not already loaded
+            if self.user_profile is None:
+                self.user_profile = np.zeros(self.tfidf_matrix.shape[1])
+            elif self.user_profile.shape[0] != self.tfidf_matrix.shape[1]:
+                # Rebuild profile if dimensions don't match
+                self.logger.warning("Rebuilding user profile due to dimension mismatch")
+                self.user_profile = np.zeros(self.tfidf_matrix.shape[1])
+                # If we have likes/dislikes, update the profile
+                if self.user_liked_titles or self.user_disliked_titles:
+                    self.update_user_profile()
+            
+            # Call model-specific preprocessing with error handling
+            try:
+                self._additional_preprocessing()
+            except Exception as e:
+                self.logger.error(f"Error in additional preprocessing: {str(e)}")
+                self.logger.warning("Continuing with base preprocessing only")
+            
+            return self
+        except Exception as e:
+            self.logger.error(f"Critical error during preprocessing: {str(e)}")
+            raise
     
+    def _create_weighted_features(self, df):
+        """Create weighted features with emphasis on age ratings"""
+        # Define rating importance weights
+        rating_emphasis = 3  # How much more we want to emphasize ratings
+        
+        # List of different rating types
+        ratings = ['TV-Y', 'TV-Y7', 'TV-G', 'G', 'TV-PG', 'PG', 'TV-14', 'PG-13', 'TV-MA', 'R', 'NC-17']
+        
+        # Create weighted features
+        weighted_features = []
+        
+        for _, row in df.iterrows():
+            try:
+                # Get the base features
+                base_features = row['combined_features']
+                
+                # Check if this row's rating is in our list
+                current_rating = row['rating'] if 'rating' in row and pd.notna(row['rating']) else ''
+                
+                # Add the rating multiple times to increase its weight in the feature vector
+                rating_boosted = ' '.join([current_rating] * rating_emphasis) if current_rating in ratings else current_rating
+                
+                # Combine original features with emphasized rating
+                weighted_feature = f"{base_features} {rating_boosted}".strip()
+                weighted_features.append(weighted_feature)
+            except Exception as e:
+                self.logger.warning(f"Error creating weighted features for row: {str(e)}")
+                weighted_features.append(row.get('combined_features', ''))
+        
+        return weighted_features
+
     def _additional_preprocessing(self):
-        """Placeholder for model-specific preprocessing steps"""
+        """Placeholder for model-specific preprocessing steps
+        Derived classes should override this method to add their specific preprocessing steps.
+        
+        Note: After this method is called, self.tfidf_matrix contains the SVD-reduced feature matrix,
+        not the original TF-IDF matrix. Make sure your derived class is aware of this.
+        """
         pass
+    
+    # Rest of the class remains the same...
     
     def update_user_profile(self):
         """Update user profile based on liked and disliked titles"""
@@ -77,14 +180,14 @@ class BaseNetflixRecommender:
             if not matches.empty:
                 disliked_indices.append(matches.index[0])
         
-        # Update user profile based on liked and disliked content
+        # Update user profile based on liked and disliked content in the SVD space
         if liked_indices:
-            liked_profile = np.mean(self.tfidf_matrix[liked_indices].toarray(), axis=0)
+            liked_profile = np.mean(self.tfidf_matrix[liked_indices], axis=0)
         else:
             liked_profile = np.zeros(self.tfidf_matrix.shape[1])
             
         if disliked_indices:
-            disliked_profile = np.mean(self.tfidf_matrix[disliked_indices].toarray(), axis=0)
+            disliked_profile = np.mean(self.tfidf_matrix[disliked_indices], axis=0)
             # Subtract disliked profile with lower weight (0.5)
             self.user_profile = liked_profile - 0.5 * disliked_profile
         else:

@@ -1,8 +1,6 @@
-# from src.personalised_netflix_recommender import PersonalisedNetflixRecommender
-# from src.knn_recommender import KNNNetflixRecommender  
-
 from src.recommenders.CosineNetflixRecommender import CosineNetflixRecommender
 from src.recommenders.KNNNetflixRecommender import KNNNetflixRecommender
+from src.seed_user import create_profile
 
 
 
@@ -22,7 +20,13 @@ def main():
     
     # Preprocess the data
     recommender.preprocess()
-    
+
+    # Check if profile exists and has likes
+    if len(recommender.user_liked_titles) == 0:
+        print("No existing preferences found. Creating seed profile...")
+        create_profile(recommender)
+        print("Seed profile created successfully!")
+
     print("\nWelcome to your personalized Netflix recommender!")
     print("This system will learn your preferences as you like or dislike titles.")
     

@@ -130,3 +130,42 @@ class NetflixRecommenderIntegration:
         except Exception as e:
             self.logger.error(f"Profile reset error: {e}")
             return False
+    
+    def save_models(self, svd_model, tfidf_vectorizer, n_components):
+        """Save SVD and TF-IDF models for persistence"""
+        models_dir = os.path.join(os.path.dirname(self.profile_path), 'models')
+        os.makedirs(models_dir, exist_ok=True)
+        
+        models_data = {
+            'svd_model': svd_model,
+            'tfidf_vectorizer': tfidf_vectorizer,
+            'n_components': n_components,
+            'created_at': pd.Timestamp.now().isoformat()
+        }
+        
+        models_path = os.path.join(models_dir, 'recommender_models.pkl')
+        
+        try:
+            with open(models_path, 'wb') as f:
+                pickle.dump(models_data, f)
+            logging.info(f"Saved models to {models_path}")
+            return True
+        except Exception as e:
+            logging.error(f"Error saving models: {str(e)}")
+            return False
+
+    def load_models(self):
+        """Load SVD and TF-IDF models if available"""
+        models_dir = os.path.join(os.path.dirname(self.profile_path), 'models')
+        models_path = os.path.join(models_dir, 'recommender_models.pkl')
+        
+        try:
+            if os.path.exists(models_path):
+                with open(models_path, 'rb') as f:
+                    models_data = pickle.load(f)
+                    logging.info(f"Loaded models with {models_data.get('n_components')} SVD components")
+                    return models_data
+            return None
+        except Exception as e:
+            logging.warning(f"Could not load models, will rebuild: {str(e)}")
+            return None

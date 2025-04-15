@@ -1,5 +1,5 @@
 # evaluation_script.py
-from src.personalised_netflix_recommender import CosineNetflixRecommender
+from src.recommenders.CosineNetflixRecommender import CosineNetflixRecommender
 from src.evaluator import RecommenderEvaluator
 
 # Step 1: Initialize your recommender

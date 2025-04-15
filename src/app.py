@@ -17,7 +17,7 @@ CORS(app,
 )
 
 ###############################################
-# IMPORTANT: This is a critical configuration #
+# IMPORTANT: Config the below:
 # Init the recommender system: Uncomment below to switch between the different recommender types.
 ###############################################
 
