@@ -174,15 +174,14 @@ def search_titles():
         'results': results_list
     })
 
+
 @app.route('/evaluation', methods=['GET'])
 def get_evaluation():
-    """Get evaluation metrics for the current user profile"""
     if len(recommender.user_liked_titles) == 0:
         return jsonify({
             'error': 'Not enough preference data. Please like some titles first!'
         }), 400
     
-    # Get recommendations
     recommendations = recommender.get_recommendations(top_n=20)
     
     if recommendations.empty:
@@ -190,12 +189,10 @@ def get_evaluation():
             'error': 'Could not generate recommendations for evaluation'
         }), 400
     
-    # Evaluate for each age group
     kids_metrics = evaluator.evaluate_recommendations(recommendations, 'kids')
     teens_metrics = evaluator.evaluate_recommendations(recommendations, 'teens')
     adults_metrics = evaluator.evaluate_recommendations(recommendations, 'adults')
     
-    # Return metrics for all age groups
     return jsonify({
         'status': 'success',
         'metrics': {
@@ -222,15 +219,10 @@ def get_evaluation():
 
 @app.route('/user/preferences', methods=['GET'])
 def get_user_preferences():
-    """
-    Endpoint to retrieve user's liked and disliked titles
-    Returns detailed information about user preferences
-    """
     try:
-        # Use the existing method from the recommender
         liked_df, disliked_df = recommender.get_user_preferences()
         
-        # Convert DataFrames to list of dictionaries
+        # Convert DataFrames -> list of dictionaries
         liked_titles = liked_df[['title', 'type', 'rating', 'release_year']].to_dict(orient='records')
         disliked_titles = disliked_df[['title', 'type', 'rating', 'release_year']].to_dict(orient='records')
         
