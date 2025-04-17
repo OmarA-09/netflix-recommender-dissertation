@@ -240,8 +240,8 @@ def get_user_preferences():
         liked_titles = liked_df[['title', 'type', 'rating', 'release_year']].to_dict(orient='records')
         disliked_titles = disliked_df[['title', 'type', 'rating', 'release_year']].to_dict(orient='records')
         
-        # Analyze preferences using the integration service
-        preference_analysis = recommender.integration_service.analyze_user_preferences(liked_df)
+        # Analyse preferences using the integration service
+        preference_analysis = recommender.integration_service.analyse_user_preferences(liked_df)
         
         return jsonify({
             'liked_titles': liked_titles,

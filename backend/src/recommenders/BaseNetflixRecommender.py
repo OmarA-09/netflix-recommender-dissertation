@@ -310,7 +310,7 @@ class BaseNetflixRecommender:
                 self.logger.info(f"{i}. {row['title']} ({row['type']}, {row['rating']})")
         
         # Use integration service for preference analysis
-        preference_analysis = self.integration_service.analyze_user_preferences(liked_df)
+        preference_analysis = self.integration_service.analyse_user_preferences(liked_df)
         
         if preference_analysis:
             self.logger.info("\n--- Your Favorite Genres ---")

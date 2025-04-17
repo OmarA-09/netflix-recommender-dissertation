@@ -78,3 +78,11 @@ curl "http://127.0.0.1:5000/films?query=Lupin&type=Movie&rating=PG-13"
 
 ### Search Indian movies
 curl "http://127.0.0.1:5000/films?query=India&type=Movie"
+
+
+## Running Tests
+
+To run all tests:
+
+```bash
+python -m pytest tests/
