@@ -5,9 +5,6 @@ from sklearn.metrics import mean_squared_error, mean_absolute_error
 import os
 
 class RecommenderEvaluator:
-    """
-    Evaluator for recommender systems using standard ML metrics
-    """
     
     def __init__(self, recommender=None):
         self.recommender = recommender
@@ -24,7 +21,6 @@ class RecommenderEvaluator:
         }
     
     def get_rating_group(self, rating):
-        """Map rating to age group"""
         for group, ratings in self.age_rating_groups.items():
             if rating in ratings:
                 return group
@@ -44,11 +40,9 @@ class RecommenderEvaluator:
         if recommendations_df.empty:
             return {"error": "No recommendations to evaluate"}
             
-        # Get actual ratings and convert to groups
         actual_ratings = recommendations_df['rating'].tolist()
         actual_groups = [self.get_rating_group(r) for r in actual_ratings]
         
-        # Create "predicted" classes (what they should be)
         predicted_groups = [target_age_group] * len(actual_groups)
         
         # Create binary classification for "appropriate" ratings
@@ -61,22 +55,15 @@ class RecommenderEvaluator:
         target_avg_value = np.mean([self.rating_values[r] for r in target_ratings])
         target_values = [target_avg_value] * len(actual_values)
         
-        # Calculate metrics
         metrics = {
             "sample_size": len(recommendations_df),
-            
-            # Classification metrics (appropriate vs inappropriate)
             "accuracy": accuracy_score(is_appropriate_target, is_appropriate_actual),
             "precision": precision_score(is_appropriate_target, is_appropriate_actual, zero_division=0),
             "recall": recall_score(is_appropriate_target, is_appropriate_actual, zero_division=0),
             "f1_score": f1_score(is_appropriate_target, is_appropriate_actual, zero_division=0),
-            
-            # Regression metrics (rating value distance)
             "mse": mean_squared_error(target_values, actual_values),
             "mae": mean_absolute_error(target_values, actual_values),
             "rmse": np.sqrt(mean_squared_error(target_values, actual_values)),
-            
-            # Content distribution
             "rating_distribution": pd.Series(actual_ratings).value_counts().to_dict(),
             "group_distribution": pd.Series(actual_groups).value_counts().to_dict()
         }
@@ -104,12 +91,10 @@ class RecommenderEvaluator:
         
         for method_name, recommender in methods.items():
             print(f"Evaluating method: {method_name}")
-            
-            # Reset recommender
+
             if hasattr(recommender, 'reset_preferences'):
                 recommender.reset_preferences()
             
-            # Add test titles to recommender
             for title in test_titles:
                 if hasattr(recommender, 'like_title'):
                     try:
@@ -117,7 +102,6 @@ class RecommenderEvaluator:
                     except:
                         print(f"  Could not add title: {title}")
             
-            # Get recommendations
             if hasattr(recommender, 'get_recommendations'):
                 recommendations = recommender.get_recommendations(top_n=20)
             else:
@@ -127,10 +111,8 @@ class RecommenderEvaluator:
                 print(f"  No recommendations for {method_name}")
                 continue
             
-            # Evaluate
             results[method_name] = self.evaluate_recommendations(recommendations, target_age_group)
         
-        # Create comparison DataFrame
         comparison_data = []
         for method_name, metrics in results.items():
             row = {
@@ -150,26 +132,20 @@ class RecommenderEvaluator:
         
         return pd.DataFrame(comparison_data)
 
-# Example usage
+
 if __name__ == "__main__":
-    from personalised_netflix_recommender import PersonalizedNetflixRecommender
+    from src.recommenders.KNNNetflixRecommender import KNNNetflixRecommender
     
-    # Initialize recommender
-    recommender = PersonalizedNetflixRecommender()
+    recommender = KNNNetflixRecommender()
     recommender.load_data('data/netflix_titles.csv')
     recommender.preprocess()
-    
-    # Initialize evaluator
     evaluator = RecommenderEvaluator()
     
-    # Test some titles
     recommender.like_title("Stranger Things")
     recommender.like_title("Breaking Bad")
     
-    # Get recommendations
     recommendations = recommender.get_recommendations(top_n=20)
     
-    # Evaluate
     kids_metrics = evaluator.evaluate_recommendations(recommendations, 'kids')
     teens_metrics = evaluator.evaluate_recommendations(recommendations, 'teens')
     adults_metrics = evaluator.evaluate_recommendations(recommendations, 'adults')
@@ -183,3 +159,8 @@ if __name__ == "__main__":
     print(f"Accuracy: {teens_metrics['accuracy']:.2f}")
     print(f"F1 Score: {teens_metrics['f1_score']:.2f}")
     print(f"RMSE: {teens_metrics['rmse']:.2f}")
+    
+    print("\nAdults target metrics:")
+    print(f"Accuracy: {adults_metrics['accuracy']:.2f}")
+    print(f"F1 Score: {adults_metrics['f1_score']:.2f}")
+    print(f"RMSE: {adults_metrics['rmse']:.2f}")

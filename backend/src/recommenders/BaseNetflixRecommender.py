@@ -117,7 +117,7 @@ class BaseNetflixRecommender:
     
     def _create_weighted_features(self, df):
         # Define rating importance weights
-        rating_emphasis = 3 
+        rating_emphasis = 2 
         
         # List ALL rating types
         ratings = ['TV-Y', 'TV-Y7', 'TV-G', 'G', 'TV-PG', 'PG', 'TV-14', 'PG-13', 'TV-MA', 'R', 'NC-17']

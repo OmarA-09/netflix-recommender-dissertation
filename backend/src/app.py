@@ -57,7 +57,6 @@ def home():
 
 @app.route('/profile', methods=['GET'])
 def get_profile():
-    """Get the current user profile"""
     liked_titles = list(recommender.user_liked_titles)
     disliked_titles = list(recommender.user_disliked_titles)
     
@@ -72,7 +71,7 @@ def get_profile():
 
 @app.route('/like', methods=['POST', 'OPTIONS'])
 def like_title():
-    # Handle OPTIONS preflight request
+    # Handle CORS
     if request.method == 'OPTIONS':
         response = jsonify(success=True)
         response.headers.add('Access-Control-Allow-Origin', '*')
@@ -80,14 +79,12 @@ def like_title():
         response.headers.add('Access-Control-Allow-Methods', 'POST,GET,OPTIONS')
         return response
 
-    # Log detailed request information
     print("DEBUG: Incoming Request")
     print("Method:", request.method)
     print("Headers:", request.headers)
     print("Content Type:", request.content_type)
     
     try:
-        # Force JSON parsing with more robust error handling
         data = request.get_json(force=True, silent=False)
         print("Parsed Data:", data)
     except Exception as e:
@@ -109,7 +106,6 @@ def like_title():
 
 @app.route('/dislike', methods=['POST'])
 def dislike_title():
-    """Dislike a specific title"""
     data = request.get_json()
     title = data.get('title') if data else None
     
@@ -127,7 +123,6 @@ def dislike_title():
 
 @app.route('/recommendations', methods=['GET'])
 def get_recommendations():
-    """Get personalized recommendations"""
     count = request.args.get('count', default=10, type=int)
     rating_filter = request.args.get('rating_filter', default=None)
     
@@ -146,7 +141,7 @@ def get_recommendations():
             'recommendations': []
         })
     
-    # Convert recommendations to list of dictionaries
+    # Convert recommendations -> list of dictionaries
     recs_list = recommendations.to_dict(orient='records')
     
     return jsonify({
@@ -157,7 +152,6 @@ def get_recommendations():
 
 @app.route('/search', methods=['GET'])
 def search_titles():
-    """Search for titles with optional filters"""
     query = request.args.get('query', '')
     rating = request.args.get('rating', None)
     
@@ -171,7 +165,7 @@ def search_titles():
     if rating:
         results = results[results['rating'] == rating]
     
-    # Convert to list of dictionaries
+    # Convert -> list of dictionaries
     results_list = results[['title', 'type', 'rating', 'release_year']].head(20).to_dict(orient='records')
     
     return jsonify({
@@ -240,7 +234,6 @@ def get_user_preferences():
         liked_titles = liked_df[['title', 'type', 'rating', 'release_year']].to_dict(orient='records')
         disliked_titles = disliked_df[['title', 'type', 'rating', 'release_year']].to_dict(orient='records')
         
-        # Analyse preferences using the integration service
         preference_analysis = recommender.integration_service.analyse_user_preferences(liked_df)
         
         return jsonify({
@@ -259,9 +252,6 @@ def get_user_preferences():
 
 @app.route('/reset', methods=['POST'])
 def reset_preferences():
-    """
-    Endpoint to completely reset user preferences
-    """
     try:
         recommender.reset_preferences()
         return jsonify({
@@ -270,74 +260,6 @@ def reset_preferences():
     except Exception as e:
         logger.error(f"Error resetting preferences: {str(e)}")
         return jsonify({'error': 'Failed to reset preferences'}), 500
-
-# @app.route('/films', methods=['GET'])
-# def list_films():
-#     """
-#     Endpoint to list films with optional search and pagination
-    
-#     Query Parameters:
-#     - query: Optional search term to filter titles
-#     - page: Page number for pagination (default: 1)
-#     - limit: Number of results per page (default: 20, max: 100)
-#     - type: Optional filter for 'Movie' or 'TV Show'
-#     - rating: Optional filter for content rating
-#     """
-#     try:
-#         # Get query parameters
-#         query = request.args.get('query', '').strip()
-#         page = max(1, request.args.get('page', 1, type=int))
-#         limit = min(100, max(1, request.args.get('limit', 20, type=int)))
-#         content_type = request.args.get('type', '').strip()
-#         rating = request.args.get('rating', '').strip()
-        
-#         # Start with the full dataset
-#         filtered_df = recommender.df.copy()
-        
-#         # Apply search filter if query is provided
-#         if query:
-#             filtered_df = filtered_df[
-#                 filtered_df['title'].str.contains(query, case=False, na=False)
-#             ]
-        
-#         # Apply type filter if specified
-#         if content_type:
-#             filtered_df = filtered_df[filtered_df['type'].str.lower() == content_type.lower()]
-        
-#         # Apply rating filter if specified
-#         if rating:
-#             filtered_df = filtered_df[filtered_df['rating'] == rating]
-        
-#         # Sort by release year (descending)
-#         filtered_df = filtered_df.sort_values('release_year', ascending=False)
-        
-#         # Pagination
-#         total_count = len(filtered_df)
-#         total_pages = math.ceil(total_count / limit)
-        
-#         # Slice the dataframe for the current page
-#         start_idx = (page - 1) * limit
-#         end_idx = start_idx + limit
-#         page_df = filtered_df.iloc[start_idx:end_idx]
-        
-#         # Prepare response
-#         results = page_df[['title', 'type', 'rating', 'release_year']].to_dict(orient='records')
-        
-#         return jsonify({
-#             'status': 'success',
-#             'total_count': total_count,
-#             'page': page,
-#             'total_pages': total_pages,
-#             'limit': limit,
-#             'results': results
-#         }), 200
-    
-#     except Exception as e:
-#         print(f"Error in films list endpoint: {str(e)}")
-#         return jsonify({
-#             'error': 'Failed to retrieve film list',
-#             'details': str(e)
-#         }), 500
 
 @app.route('/films', methods=['GET'])
 def list_films():
@@ -352,43 +274,39 @@ def list_films():
     - rating: Optional filter for content rating
     """
     try:
-        # Get query parameters
         query = request.args.get('query', '').strip()
         page = max(1, request.args.get('page', 1, type=int))
         limit = min(100, max(1, request.args.get('limit', 20, type=int)))
         content_type = request.args.get('type', '').strip()
         rating = request.args.get('rating', '').strip()
         
-        # Start with the full dataset
         filtered_df = recommender.df.copy()
         
-        # Apply search filter if query is provided
+        # search filter
         if query:
             filtered_df = filtered_df[
                 filtered_df['title'].str.contains(query, case=False, na=False)
             ]
         
-        # Apply type filter if specified
+        # type filter
         if content_type:
             filtered_df = filtered_df[filtered_df['type'].str.lower() == content_type.lower()]
         
-        # Apply rating filter if specified
+        # rating filter
         if rating:
             filtered_df = filtered_df[filtered_df['rating'] == rating]
         
-        # Sort by release year (descending)
+        # Sort by release year
         filtered_df = filtered_df.sort_values('release_year', ascending=False)
         
         # Pagination
         total_count = len(filtered_df)
         total_pages = math.ceil(total_count / limit)
         
-        # Slice the dataframe for the current page
         start_idx = (page - 1) * limit
         end_idx = start_idx + limit
         page_df = filtered_df.iloc[start_idx:end_idx]
         
-        # Prepare response with title, type, rating, release_year, and description
         results = page_df[['title', 'type', 'rating', 'release_year', 'description']].to_dict(orient='records')
         
         return jsonify({
