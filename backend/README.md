@@ -86,3 +86,8 @@ To run all tests:
 
 ```bash
 python -m pytest tests/
+```
+
+To run specific tests:
+```bash
+python -m pytest tests/YOUR_TEST_FILENAME.py -v
