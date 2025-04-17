@@ -1,13 +1,11 @@
 from src.recommenders.CosineNetflixRecommender import CosineNetflixRecommender
-# This allows the script to be run standalone for testing
+# Allows the script to be run standalone for testing
 
 def create_profile(recommender):
-    """Create a highly focused seed profile to maximize evaluation metrics for age-appropriate content"""
-    # Reset preferences
     recommender.reset_preferences()
     
     liked_titles = [
-        # TV-PG, TV-Y7, PG titles from your dataset
+        # TV-PG, TV-Y7, PG titles from our dataset
         "Our Planet",
         "Planet Earth II",
         "NOVA: Bird Brain",
@@ -26,7 +24,7 @@ def create_profile(recommender):
         "Paddleton"
     ]
     
-    # DISLIKES - Mature, explicit content from your dataset
+    # DISLIKES - Mature, explicit content from our dataset
     disliked_titles = [
         "Narcos",
         "Nymphomaniac: Volume 1",
@@ -56,7 +54,7 @@ def create_profile(recommender):
         "Philadelphia"
     ]
     
-    # Like each title in the liked list
+    # Like the liked list
     successful_likes = 0
     for title in liked_titles:
         try:
@@ -69,7 +67,7 @@ def create_profile(recommender):
         except Exception as e:
             print(f"Error liking title {title}: {str(e)}")
     
-    # Dislike each title in the disliked list
+    # Dislike the disliked list
     successful_dislikes = 0
     for title in disliked_titles:
         try:
@@ -87,7 +85,6 @@ def create_profile(recommender):
     return recommender
 
 if __name__ == "__main__":
-    # This allows the script to be run standalone for testing
     test_recommender = CosineNetflixRecommender()
     test_recommender.load_data('data/netflix_titles.csv')
     test_recommender.preprocess()
