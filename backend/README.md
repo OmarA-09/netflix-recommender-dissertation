@@ -1,6 +1,8 @@
-# netflix-recommender-dissertation Backend User Guide
+# Netflix Recommender Backend User Guide
 
-From /backend:
+The backend handles all data processing, machine learning models, and API endpoints.
+
+**From /backend:**
 
 ## Install required packages:
 

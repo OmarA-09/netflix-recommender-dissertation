@@ -1,6 +1,6 @@
 # Netflix Recommender Frontend User Guide
 
-From /frontend:
+**From /frontend:**
 
 ## Prerequisites
 Check if you have the following prerequisites installed and install them if needed:
