@@ -1,45 +1,72 @@
-# Netflix Recommender Frontend
+# Netflix Recommender Frontend User Guide
+
+From /frontend:
 
 ## Prerequisites
-- Node.js (v14 or later)
-- npm or yarn
-- Backend Flask application running on `http://127.0.0.1:5000`
+Check if you have the following prerequisites installed and install them if needed:
 
-## Setup
-
-1. Clone the repository
-2. Install dependencies:
+### 1. Node.js (v14 or later)
+**Check installation:**
 ```bash
-npm install
-# or
-yarn install
+node --version
 ```
 
-3. Install Tailwind CSS (if not already installed):
+**Install if needed:**
+- Windows: Download and install from [nodejs.org](https://nodejs.org/)
+- macOS: 
+  ```bash
+  brew install node
+  ```
+- Linux (Ubuntu/Debian):
+  ```bash
+  sudo apt update
+  sudo apt install nodejs npm
+  ```
+
+### 2. npm or yarn
+**Check installation:**
 ```bash
-npm install -D tailwindcss
-npx tailwindcss init
+# For npm - if Node.js is installed then use this npm command
+npm --version
+
+# For yarn
+yarn --version
 ```
 
-4. Configure Tailwind in `tailwind.config.js`:
-```javascript
-module.exports = {
-  content: [
-    "./src/**/*.{js,jsx,ts,tsx}",
-  ],
-  theme: {
-    extend: {},
-  },
-  plugins: [],
-}
+**Install yarn if needed:**
+```bash
+npm install -g yarn
 ```
 
-5. Add Tailwind directives toyour CSS file (e.g., `src/index.css`):
-```css
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+### 3. Backend Flask Application
+**Check if running:**
+```bash
+curl http://127.0.0.1:5000
 ```
+You should receive a response if the backend is running.
+
+**Install and run the backend if needed:**
+```bash
+# Navigate to the backend directory
+cd ../backend
+
+# Create a virtual environment
+python -m venv venv
+
+# Activate the virtual environment
+# On Windows:
+venv\Scripts\activate
+# On macOS/Linux:
+source venv/bin/activate
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Run the Flask application
+python app.py
+```
+
+Make sure the backend Flask application is running on `http://127.0.0.1:5000` before starting the frontend.
 
 ## Running the Application
 
@@ -56,7 +83,7 @@ yarn start
 - Browse Netflix titles
 - Search films
 - Like/Dislike individual titles
-- Get personalized recommendations
+- Get personalised recommendations
 
 ## Configuration
 
@@ -75,6 +102,6 @@ yarn build
 ```
 
 ## Deployment Notes
-- The app uses Tailwind CSS for styling
-- Requires a modern browser with ES6 support
+- App uses Tailwind CSS for styling
+- Requires modern browser with ES6 support
 - Tested with React 17+

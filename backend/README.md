@@ -1,24 +1,18 @@
-# netflix-recommender-dissertation
+# netflix-recommender-dissertation Backend User Guide
 
-From netflix-recommender-dissertation:
+From /backend:
 
 ## Install required packages:
 
 `pip install -r requirements.txt`
 
-## For Terminal View: Run the run_recommender script from backend folder:
-
-`python ./scripts/run_recommender.py`
-
-- Note: Ensure you select the correct recommender type for init before executing app.py
-
 ## To run Backend with endpoints:
 
 `python ./src/app.py`
 
-- Note: Ensure you select the correct recommender type before executing app.py
+- Note: Ensure you select the correct recommender type (KNN or Cosine) before executing app.py
 
-## Test with API curl commands in another terminal!
+## Test with API curl commands in separate terminal after running Backend.
 
 ### Test the home endpoint
 
